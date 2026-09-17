@@ -94,22 +94,31 @@ function AdminDashboard({ session, onLogout }) {
   const [allowed, setAllowed] = useState(false);
 
   const load = async () => {
-    const { data: admin } = await supabase.from("admins").select("user_id").eq("user_id", session.user.id).maybeSingle();
-    if (!admin) { setAllowed(false); setLoading(false); return; }
-    setAllowed(true);
-    const allProjects = [];
-    for (let offset = 0; ; offset += 1000) {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: false })
-        .range(offset, offset + 999);
-      if (error) { setMessage(error.message); break; }
-      allProjects.push(...(data || []));
-      if (!data || data.length < 1000) break;
+    try {
+      const { data: admin, error: adminError } = await supabase
+        .from("admins")
+        .select("user_id")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      if (adminError) throw adminError;
+      if (!admin) { setAllowed(false); setLoading(false); return; }
+      setAllowed(true);
+      const allProjects = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await supabase
+          .from("projects")
+          .select("*")
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: false })
+          .range(offset, offset + 999);
+        if (error) throw error;
+        allProjects.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      setProjects(allProjects);
+    } catch (loadError) {
+      setMessage(loadError.message || "Could not load the admin dashboard.");
     }
-    setProjects(allProjects);
     setLoading(false);
   };
   useEffect(() => { load(); }, [session.user.id]);
@@ -164,7 +173,11 @@ export default function AdminApp() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     if (!supabase) { setReady(true); return undefined; }
-    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setReady(true); });
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (error) setSession(null);
+      else setSession(data.session);
+      setReady(true);
+    });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
     return () => listener.subscription.unsubscribe();
   }, []);
