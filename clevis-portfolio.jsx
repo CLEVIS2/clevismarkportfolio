@@ -536,15 +536,16 @@ const MENU_ITEMS = [
   { label: "ABOUT ME", view: "about" },
   { label: "PROCESS", view: "process" },
   { label: "LET'S WORK", view: "contact" },
+  { label: "ADMIN", href: "/admin" },
 ];
 
 function MenuList({ onSelect }) {
   return (
     <ul className="flex flex-col">
       {MENU_ITEMS.map((item) => (
-        <li key={item.view} style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <li key={item.view || item.href} style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <button
-            onClick={() => onSelect(item.view)}
+            onClick={() => item.href ? (window.location.href = item.href) : onSelect(item.view)}
             className="w-full text-left py-5 uppercase tracking-wide transition-colors"
             style={{ fontFamily: "var(--font-display)", fontSize: "clamp(24px,5vw,40px)" }}
             onMouseEnter={(e) => (e.currentTarget.style.color = COLORS.lime)}

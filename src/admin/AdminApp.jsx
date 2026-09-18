@@ -35,10 +35,15 @@ function AuthScreen({ onLogin }) {
   const submit = async (event) => {
     event.preventDefault();
     setBusy(true); setError("");
-    const { data, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-    if (loginError) setError(loginError.message);
-    else onLogin(data.session);
-    setBusy(false);
+    try {
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+      if (loginError) setError(loginError.message);
+      else onLogin(data.session);
+    } catch (loginError) {
+      setError(loginError.message || "Could not reach Supabase. Check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return <div className="admin-root flex min-h-screen items-center justify-center px-5"><AdminStyles /><form onSubmit={submit} className="admin-panel w-full max-w-md p-7 md:p-10">
