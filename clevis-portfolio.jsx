@@ -167,6 +167,32 @@ function ParticleBackground() {
     const points = new THREE.Points(particleGeo, particleMat);
     scene.add(points);
 
+    const SWARM_COUNT = window.innerWidth < 768 ? 90 : 220;
+    const swarmPositions = new Float32Array(SWARM_COUNT * 3);
+    const swarmOffsets = new Float32Array(SWARM_COUNT * 3);
+    const swarmVelocities = new Float32Array(SWARM_COUNT * 3);
+    for (let i = 0; i < SWARM_COUNT; i++) {
+      const index = i * 3;
+      swarmOffsets[index] = (Math.random() - 0.5) * 7;
+      swarmOffsets[index + 1] = (Math.random() - 0.5) * 5;
+      swarmOffsets[index + 2] = (Math.random() - 0.5) * 4;
+      swarmPositions[index] = 9999;
+      swarmPositions[index + 1] = 9999;
+      swarmPositions[index + 2] = 9999;
+    }
+    const swarmGeo = new THREE.BufferGeometry();
+    swarmGeo.setAttribute("position", new THREE.BufferAttribute(swarmPositions, 3));
+    const swarmMat = new THREE.PointsMaterial({
+      color: 0xccff00,
+      size: window.innerWidth < 768 ? 0.8 : 0.65,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const swarm = new THREE.Points(swarmGeo, swarmMat);
+    scene.add(swarm);
+
     /* ---- energy lines moving forward in Z ---- */
     const LINE_COUNT = window.innerWidth < 768 ? 80 : 200;
     const lineSegLen = 6;
@@ -199,6 +225,8 @@ function ParticleBackground() {
 
     /* ---- mouse interaction ---- */
     const mouseNDC = new THREE.Vector2(-10, -10);
+    let pointerActive = false;
+    let waveClock = 0;
     const raycaster = new THREE.Raycaster();
     const interactPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     const mouseWorld = new THREE.Vector3(9999, 9999, 0);
@@ -207,15 +235,20 @@ function ParticleBackground() {
       const rect = mount.getBoundingClientRect();
       mouseNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      pointerActive = true;
     }
     function onPointerLeave() {
       mouseNDC.set(-10, -10);
+      pointerActive = false;
     }
-    mount.addEventListener("mousemove", onPointerMove);
-    mount.addEventListener("mouseleave", onPointerLeave);
+    window.addEventListener("mousemove", onPointerMove);
+    window.addEventListener("mouseleave", onPointerLeave);
 
     const REPULSE_DIST = 20;
     const FORCE_MULT = 0.04;
+    const WAVE_RADIUS = 23;
+    const WAVE_WIDTH = 5;
+    const WAVE_SPEED = 2.8;
     const MAX_COLOR_MIX = 0.4;
     const SPRING_K = 0.02;
     const DAMPING = 0.9;
@@ -224,6 +257,7 @@ function ParticleBackground() {
     const tmpColor = new THREE.Color();
 
     function animate() {
+      waveClock += 0.035;
       raycaster.setFromCamera(mouseNDC, camera);
       raycaster.ray.intersectPlane(interactPlane, mouseWorld);
       if (!mouseWorld) mouseWorld.set(9999, 9999, 0);
@@ -247,6 +281,18 @@ function ParticleBackground() {
           mix = (1 - dist / REPULSE_DIST) * MAX_COLOR_MIX;
         }
 
+        if (pointerActive) {
+          const waveFront = (waveClock * WAVE_SPEED) % WAVE_RADIUS;
+          const waveDistance = Math.abs(dist - waveFront);
+          const wave = Math.max(0, 1 - waveDistance / WAVE_WIDTH);
+          const wavePulse = wave * Math.exp(-dist / 18);
+          const waveForce = wavePulse * 0.018;
+
+          velocities[ix] += (dx / dist) * waveForce;
+          velocities[iy] += (dy / dist) * waveForce;
+          mix = Math.max(mix, wavePulse);
+        }
+
         velocities[ix] += (basePositions[ix] - posAttr[ix]) * SPRING_K;
         velocities[iy] += (basePositions[iy] - posAttr[iy]) * SPRING_K;
         velocities[iz] += (basePositions[iz] - posAttr[iz]) * SPRING_K;
@@ -266,6 +312,27 @@ function ParticleBackground() {
       }
       particleGeo.attributes.position.needsUpdate = true;
       particleGeo.attributes.color.needsUpdate = true;
+
+      swarmMat.opacity += ((pointerActive ? 0.95 : 0) - swarmMat.opacity) * 0.12;
+      const swarmPos = swarmGeo.attributes.position.array;
+      for (let i = 0; i < SWARM_COUNT; i++) {
+        const index = i * 3;
+        const phase = waveClock * 2 + i * 0.31;
+        const targetX = mouseWorld.x + swarmOffsets[index] + Math.sin(phase) * 1.2;
+        const targetY = mouseWorld.y + swarmOffsets[index + 1] + Math.cos(phase * 1.17) * 1.2;
+        const targetZ = swarmOffsets[index + 2] + Math.sin(phase * 0.8) * 0.8;
+
+        swarmVelocities[index] += (targetX - swarmPos[index]) * 0.035;
+        swarmVelocities[index + 1] += (targetY - swarmPos[index + 1]) * 0.035;
+        swarmVelocities[index + 2] += (targetZ - swarmPos[index + 2]) * 0.035;
+        swarmVelocities[index] *= 0.88;
+        swarmVelocities[index + 1] *= 0.88;
+        swarmVelocities[index + 2] *= 0.88;
+        swarmPos[index] += swarmVelocities[index];
+        swarmPos[index + 1] += swarmVelocities[index + 1];
+        swarmPos[index + 2] += swarmVelocities[index + 2];
+      }
+      swarmGeo.attributes.position.needsUpdate = true;
 
       const lPos = lineGeo.attributes.position.array;
       for (let i = 0; i < LINE_COUNT; i++) {
@@ -293,10 +360,12 @@ function ParticleBackground() {
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", onResize);
-      mount.removeEventListener("mousemove", onPointerMove);
-      mount.removeEventListener("mouseleave", onPointerLeave);
+      window.removeEventListener("mousemove", onPointerMove);
+      window.removeEventListener("mouseleave", onPointerLeave);
       particleGeo.dispose();
       particleMat.dispose();
+      swarmGeo.dispose();
+      swarmMat.dispose();
       lineGeo.dispose();
       lineMat.dispose();
       renderer.dispose();
@@ -323,7 +392,12 @@ function Header({ onOpenDrawer, onOpenView }) {
     { label: "PROCESS", view: "process" },
   ];
   return (
-    <header className="relative z-30 flex items-center justify-between px-6 md:px-10 py-5">
+    <motion.header
+      className="relative z-30 flex items-center justify-between px-6 md:px-10 py-5"
+      initial={{ opacity: 0, y: -36 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div className="flex items-center gap-3">
         <span
           style={{ fontFamily: "var(--font-display)" }}
@@ -371,7 +445,7 @@ function Header({ onOpenDrawer, onOpenView }) {
       >
           EXPLORE
       </button>
-    </header>
+    </motion.header>
   );
 }
 
@@ -468,7 +542,12 @@ function TypewriterBio({ text }) {
 /* ---------------------------------------------------------------- */
 function HeroContent() {
   return (
-    <div className="relative z-20 flex-1 flex flex-col items-center justify-center text-center px-4 gap-5 md:gap-7">
+    <motion.div
+      className="relative z-20 flex-1 flex flex-col items-center justify-center text-center px-4 gap-5 md:gap-7"
+      initial={{ opacity: 0, y: -64 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.18, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div style={{ fontFamily: "var(--font-display)" }}>
         <div
           className="stroke-text uppercase"
@@ -482,7 +561,7 @@ function HeroContent() {
         />
       </div>
       <TypewriterBio text={BIO} />
-    </div>
+    </motion.div>
   );
 }
 
@@ -491,9 +570,12 @@ function HeroContent() {
 /* ---------------------------------------------------------------- */
 function HeroImage() {
   return (
-    <div
+    <motion.div
       className="hero-image-wrap absolute bottom-0 z-10 pointer-events-none"
       style={{ left: "50%", transform: "translateX(-50%)" }}
+      initial={{ opacity: 0, y: -80 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.35, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
     >
       <img
         src={HERO_IMG}
@@ -504,7 +586,7 @@ function HeroImage() {
             "brightness(0.95) grayscale(1) contrast(1.25) drop-shadow(0 25px 50px rgba(0,0,0,0.5))",
         }}
       />
-    </div>
+    </motion.div>
   );
 }
 
@@ -525,6 +607,40 @@ function FooterMarquee() {
         {phrase.repeat(4)}
       </div>
     </div>
+  );
+}
+
+function SiteFooter({ onOpenView }) {
+  return (
+    <motion.footer
+      className="relative z-30 border-t px-6 py-8 md:px-10 md:py-10"
+      style={{ borderColor: "rgba(255,255,255,0.16)" }}
+      initial={{ opacity: 0, y: -40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.25 }}
+      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-xs tracking-widest opacity-50" style={{ fontFamily: "var(--font-mono)" }}>
+            HAVE A PROJECT IN MIND?
+          </p>
+          <button
+            type="button"
+            onClick={() => onOpenView("contact")}
+            className="mt-3 text-left uppercase leading-none transition-colors hover:text-lime-300"
+            style={{ fontFamily: "var(--font-display)", fontSize: "clamp(34px, 7vw, 76px)" }}
+          >
+            LET'S WORK.
+          </button>
+        </div>
+        <div className="flex flex-col gap-2 text-xs tracking-widest md:items-end" style={{ fontFamily: "var(--font-mono)" }}>
+          <a href="mailto:Nyongesaclevis76@gmail.com" className="transition-colors hover:text-lime-300">NYONGESACLEVIS76@GMAIL.COM</a>
+          <a href="tel:+254743483176" className="transition-colors hover:text-lime-300">+254 743 483 176</a>
+          <p className="mt-4 opacity-45">© {new Date().getFullYear()} CLEVIS MARK / KENYA</p>
+        </div>
+      </div>
+    </motion.footer>
   );
 }
 
@@ -1084,11 +1200,15 @@ export default function App() {
           setDrawerOpen(true);
         }}
       />
-      <main className="relative flex-1 flex flex-col overflow-hidden">
+      <main className="relative flex min-h-[78dvh] flex-col overflow-hidden">
         <HeroContent />
         <HeroImage />
+        <FooterMarquee />
       </main>
-      <FooterMarquee />
+      <SiteFooter onOpenView={(view) => {
+        setDrawerView(view);
+        setDrawerOpen(true);
+      }} />
       <InfoDrawer
         open={drawerOpen}
         view={drawerView}
