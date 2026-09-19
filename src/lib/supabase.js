@@ -3,11 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-
 const hasValidConfig =
   typeof supabaseUrl === "string" &&
   supabaseUrl.startsWith("https://") &&
-  !supabaseUrl.includes("clevismarkportfolio.vercel.app/admin") &&
+  !supabaseUrl.includes("your-project") &&
   typeof supabaseAnonKey === "string" &&
   supabaseAnonKey.length > 20 &&
   !supabaseAnonKey.includes("your-publishable");

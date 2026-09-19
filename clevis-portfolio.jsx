@@ -644,6 +644,73 @@ function SiteFooter({ onOpenView }) {
   );
 }
 
+function ScrollSection({ id, number, label, children, tone = "transparent" }) {
+  return (
+    <motion.section
+      id={id}
+      className="relative z-20 border-t px-6 py-20 md:px-10 md:py-32"
+      style={{ borderColor: "rgba(255,255,255,0.16)", background: tone }}
+      initial={{ opacity: 0, y: 56 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.12 }}
+      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[minmax(120px,1fr)_minmax(0,3fr)] md:gap-16">
+        <div className="flex items-start justify-between gap-4 md:block">
+          <p className="text-xs tracking-widest" style={{ color: COLORS.lime, fontFamily: "var(--font-mono)" }}>
+            {number}
+          </p>
+          <p className="text-xs tracking-widest opacity-45 md:mt-3" style={{ fontFamily: "var(--font-mono)" }}>
+            {label}
+          </p>
+        </div>
+        <div className="max-w-4xl">{children}</div>
+      </div>
+    </motion.section>
+  );
+}
+
+function PortfolioBody({ onOpenView }) {
+  return (
+    <div className="relative">
+      <ScrollSection id="about" number="01" label="ABOUT ME">
+        <AboutView />
+      </ScrollSection>
+      <ScrollSection id="projects" number="02" label="SELECTED WORK" tone="rgba(255,255,255,0.025)">
+        <ProjectsView />
+      </ScrollSection>
+      <ScrollSection id="process" number="03" label="PROCESS">
+        <ProcessView />
+      </ScrollSection>
+      <ScrollSection id="journal" number="04" label="JOURNAL" tone="rgba(255,255,255,0.025)">
+        <BlogView />
+      </ScrollSection>
+      <ScrollSection id="contact" number="05" label="LET'S WORK">
+        <div className="grid gap-12 lg:grid-cols-[1fr_minmax(0,1.2fr)] lg:gap-20">
+          <div>
+            <p className="text-xs tracking-widest" style={{ color: COLORS.lime, fontFamily: "var(--font-mono)" }}>START A CONVERSATION</p>
+            <h2 className="mt-4 uppercase leading-none" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(48px, 9vw, 112px)" }}>
+              Let's make<br />something useful.
+            </h2>
+            <p className="mt-6 max-w-md leading-relaxed" style={{ color: "rgba(255,255,255,0.7)" }}>
+              Tell me what you are building, what it needs to do, and where you want it to go.
+            </p>
+            <button
+              type="button"
+              onClick={() => onOpenView("contact")}
+              className="mt-8 inline-flex rounded-full px-5 py-3 text-xs tracking-widest transition-opacity hover:opacity-80"
+              style={{ background: COLORS.lime, color: "#000", fontFamily: "var(--font-mono)" }}
+            >
+              OPEN CONTACT FORM
+            </button>
+          </div>
+          <ContactForm />
+        </div>
+      </ScrollSection>
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------------- */
 /* Info drawer                                                       */
 /* ---------------------------------------------------------------- */
@@ -652,7 +719,6 @@ const MENU_ITEMS = [
   { label: "ABOUT ME", view: "about" },
   { label: "PROCESS", view: "process" },
   { label: "LET'S WORK", view: "contact" },
-  { label: "ADMIN", href: "/admin" },
 ];
 
 function MenuList({ onSelect }) {
@@ -1185,7 +1251,7 @@ export default function App() {
 
   return (
     <div
-      className="clevis-root relative flex flex-col min-h-screen overflow-hidden"
+      className="clevis-root relative flex min-h-screen flex-col overflow-x-hidden"
       style={{ background: COLORS.bg, color: COLORS.white }}
     >
       <GlobalStyles />
@@ -1205,6 +1271,10 @@ export default function App() {
         <HeroImage />
         <FooterMarquee />
       </main>
+      <PortfolioBody onOpenView={(view) => {
+        setDrawerView(view);
+        setDrawerOpen(true);
+      }} />
       <SiteFooter onOpenView={(view) => {
         setDrawerView(view);
         setDrawerOpen(true);
