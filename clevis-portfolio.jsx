@@ -35,8 +35,90 @@ function GlobalStyles() {
       .clevis-root *::selection{ background:${COLORS.lime}; color:#000; }
       *, *::before, *::after{ box-sizing: border-box; }
       html, body, #root{ min-height: 100%; margin: 0; }
+      html{ scroll-behavior: smooth; }
       body{ overflow-x: hidden; background: ${COLORS.bg}; }
-      .clevis-root{ min-height: 100dvh; font-family: var(--font-sans); }
+      .clevis-root{ min-height: 100dvh; width: 100%; max-width: 100%; overflow-wrap: anywhere; font-family: var(--font-sans); }
+      .portfolio-section{ scroll-margin-top: 20px; }
+      .portfolio-section h2,
+      .portfolio-section h3,
+      .portfolio-section p{ max-width: 100%; }
+      button, a, input, select, textarea{ max-width: 100%; }
+      .motion-surface{ isolation: isolate; overflow: hidden; }
+      .motion-surface::before,
+      .motion-surface::after{
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        opacity: .5;
+      }
+      .motion-surface::before{
+        background: repeating-linear-gradient(112deg, transparent 0 66px, rgba(136,170,255,.28) 67px 68px, transparent 69px 136px);
+        animation: clevis-lines-forward 12s linear infinite;
+      }
+      .motion-surface::after{
+        background: repeating-linear-gradient(68deg, transparent 0 114px, rgba(204,255,0,.2) 115px 116px, transparent 117px 232px);
+        animation: clevis-lines-back 17s linear infinite;
+      }
+      .motion-surface > *{ position: relative; z-index: 1; }
+      .motion-surface > .idea-wave{ z-index: 0; }
+      .idea-wave{
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      .idea-wave span{
+        position: absolute;
+        color: ${COLORS.lime};
+        font-size: clamp(14px, 1.7vw, 25px);
+        opacity: .42;
+        filter: drop-shadow(0 0 8px rgba(204,255,0,.55));
+        animation: clevis-idea-drift 5.5s ease-in-out infinite;
+        animation-delay: var(--idea-delay);
+      }
+      @keyframes clevis-idea-drift{
+        0%, 100%{ transform: translate3d(-16px, 18px, 0) rotate(-18deg) scale(.8); opacity: .18; }
+        25%{ transform: translate3d(0, -14px, 0) rotate(8deg) scale(1.15); opacity: .7; }
+        50%{ transform: translate3d(18px, 4px, 0) rotate(24deg) scale(.95); opacity: .36; }
+        75%{ transform: translate3d(4px, 20px, 0) rotate(-6deg) scale(1.08); opacity: .58; }
+      }
+      .idea-icon{ animation: clevis-idea-wave 3.2s ease-in-out infinite; transform-origin: center; }
+      .idea-icon:hover{ animation-duration: .7s; filter: drop-shadow(0 0 10px rgba(204,255,0,.8)); }
+      .idea-icon:active{ animation-duration: .35s; }
+      @keyframes clevis-idea-wave{
+        0%, 100%{ transform: rotate(0deg) translateY(0) scale(1); }
+        20%{ transform: rotate(-12deg) translateY(-2px) scale(1.06); }
+        40%{ transform: rotate(10deg) translateY(1px) scale(1.02); }
+        60%{ transform: rotate(-7deg) translateY(-1px) scale(1.05); }
+        80%{ transform: rotate(5deg) translateY(0) scale(1.01); }
+      }
+      button, a{ transition: transform .18s ease, opacity .2s ease, color .2s ease; }
+      button:active, a:active{ transform: scale(.97); }
+      .portfolio-section h2,
+      .portfolio-section h3,
+      .portfolio-item{
+        transition: transform .35s cubic-bezier(.22,1,.36,1), color .25s ease, border-color .25s ease;
+      }
+      .portfolio-section h2:hover,
+      .portfolio-section h3:hover{ color: ${COLORS.lime}; transform: translateX(8px); }
+      .portfolio-item:hover{ border-color: ${COLORS.lime} !important; transform: translateX(6px); }
+      .portfolio-section h2:active,
+      .portfolio-section h3:active,
+      .portfolio-item:active{ transform: translateX(4px) scale(.99); }
+      @keyframes clevis-lines-forward{
+        from{ transform: translate3d(-8%, -3%, 0); }
+        to{ transform: translate3d(8%, 3%, 0); }
+      }
+      @keyframes clevis-lines-back{
+        from{ transform: translate3d(7%, 4%, 0); }
+        to{ transform: translate3d(-7%, -4%, 0); }
+      }
+      @media (max-width: 640px){
+        .clevis-input{ font-size: 16px; }
+        .portfolio-section{ padding-left: 18px; padding-right: 18px; }
+      }
       .hero-image-wrap{
         height: min(78%, 78dvh);
         width: min(52vw, 640px);
@@ -194,15 +276,18 @@ function ParticleBackground() {
     scene.add(swarm);
 
     /* ---- energy lines moving forward in Z ---- */
-    const LINE_COUNT = window.innerWidth < 768 ? 80 : 200;
+    const LINE_COUNT = window.innerWidth < 768 ? 110 : 300;
     const lineSegLen = 6;
     const linePositions = new Float32Array(LINE_COUNT * 2 * 3);
+    const lineHomePositions = new Float32Array(LINE_COUNT * 2);
     const lineSpeeds = new Float32Array(LINE_COUNT);
 
     function resetLine(i) {
-      const x = (Math.random() - 0.5) * 70;
-      const y = (Math.random() - 0.5) * 45;
+      const x = (Math.random() - 0.5) * 54;
+      const y = (Math.random() - 0.5) * 34;
       const z = -90 - Math.random() * 40;
+      lineHomePositions[i * 2] = x;
+      lineHomePositions[i * 2 + 1] = y;
       linePositions[i * 6] = x;
       linePositions[i * 6 + 1] = y;
       linePositions[i * 6 + 2] = z;
@@ -218,7 +303,7 @@ function ParticleBackground() {
     const lineMat = new THREE.LineBasicMaterial({
       color: 0x88aaff,
       transparent: true,
-      opacity: 0.2,
+      opacity: 0.42,
     });
     const lines = new THREE.LineSegments(lineGeo, lineMat);
     scene.add(lines);
@@ -226,6 +311,7 @@ function ParticleBackground() {
     /* ---- mouse interaction ---- */
     const mouseNDC = new THREE.Vector2(-10, -10);
     let pointerActive = false;
+    let clickEnergy = 0;
     let waveClock = 0;
     const raycaster = new THREE.Raycaster();
     const interactPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
@@ -241,8 +327,13 @@ function ParticleBackground() {
       mouseNDC.set(-10, -10);
       pointerActive = false;
     }
+    function onPointerDown() {
+      clickEnergy = 1;
+      pointerActive = true;
+    }
     window.addEventListener("mousemove", onPointerMove);
     window.addEventListener("mouseleave", onPointerLeave);
+    window.addEventListener("pointerdown", onPointerDown);
 
     const REPULSE_DIST = 20;
     const FORCE_MULT = 0.04;
@@ -258,6 +349,7 @@ function ParticleBackground() {
 
     function animate() {
       waveClock += 0.035;
+      clickEnergy *= 0.93;
       raycaster.setFromCamera(mouseNDC, camera);
       raycaster.ray.intersectPlane(interactPlane, mouseWorld);
       if (!mouseWorld) mouseWorld.set(9999, 9999, 0);
@@ -291,6 +383,13 @@ function ParticleBackground() {
           velocities[ix] += (dx / dist) * waveForce;
           velocities[iy] += (dy / dist) * waveForce;
           mix = Math.max(mix, wavePulse);
+        }
+
+        if (clickEnergy > 0.01) {
+          const clickForce = clickEnergy * Math.max(0, 1 - dist / 28) * 0.05;
+          velocities[ix] += (dx / dist) * clickForce;
+          velocities[iy] += (dy / dist) * clickForce;
+          mix = Math.max(mix, clickEnergy * Math.max(0, 1 - dist / 30));
         }
 
         velocities[ix] += (basePositions[ix] - posAttr[ix]) * SPRING_K;
@@ -336,12 +435,26 @@ function ParticleBackground() {
 
       const lPos = lineGeo.attributes.position.array;
       for (let i = 0; i < LINE_COUNT; i++) {
+        const lineIndex = i * 6;
+        const homeIndex = i * 2;
+        const lineDx = lPos[lineIndex] - mouseWorld.x;
+        const lineDy = lPos[lineIndex + 1] - mouseWorld.y;
+        const lineDistance = Math.sqrt(lineDx * lineDx + lineDy * lineDy) || 0.0001;
+        const lineInfluence = pointerActive ? Math.max(0, 1 - lineDistance / 34) : 0;
+        const lineWave = Math.sin(waveClock * 3.5 - lineDistance * 0.16) * lineInfluence;
+        const linePull = lineInfluence * (0.035 + clickEnergy * 0.05);
+
+        lPos[lineIndex] += (lineHomePositions[homeIndex] - lPos[lineIndex]) * 0.012;
+        lPos[lineIndex + 1] += (lineHomePositions[homeIndex + 1] - lPos[lineIndex + 1]) * 0.012;
+        lPos[lineIndex] += (mouseWorld.x - lPos[lineIndex]) * linePull + (lineDx / lineDistance) * lineWave * 0.08;
+        lPos[lineIndex + 1] += (mouseWorld.y - lPos[lineIndex + 1]) * linePull + (lineDy / lineDistance) * lineWave * 0.08;
         lPos[i * 6 + 2] += lineSpeeds[i];
         lPos[i * 6 + 5] += lineSpeeds[i];
         if (lPos[i * 6 + 2] > camera.position.z) {
           resetLine(i);
         }
       }
+      lineMat.opacity += ((pointerActive ? 0.52 : 0.42) - lineMat.opacity) * 0.08;
       lineGeo.attributes.position.needsUpdate = true;
 
       renderer.render(scene, camera);
@@ -362,6 +475,7 @@ function ParticleBackground() {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("mousemove", onPointerMove);
       window.removeEventListener("mouseleave", onPointerLeave);
+      window.removeEventListener("pointerdown", onPointerDown);
       particleGeo.dispose();
       particleMat.dispose();
       swarmGeo.dispose();
@@ -409,7 +523,7 @@ function Header({ onOpenDrawer, onOpenView }) {
           className="group w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
           style={{ background: COLORS.lime, color: "#000" }}
         >
-          <span className="inline-block transition-transform duration-500 ease-out group-hover:rotate-180">
+          <span className="idea-icon inline-block">
             ✦
           </span>
         </div>
@@ -572,9 +686,9 @@ function HeroImage() {
   return (
     <motion.div
       className="hero-image-wrap absolute bottom-0 z-10 pointer-events-none"
-      style={{ left: "50%", transform: "translateX(-50%)" }}
-      initial={{ opacity: 0, y: -80 }}
-      animate={{ opacity: 1, y: 0 }}
+      style={{ left: "50%" }}
+      initial={{ opacity: 0, x: "-50%", y: -80 }}
+      animate={{ opacity: 1, x: "-50%", y: 0 }}
       transition={{ delay: 0.35, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
     >
       <img
@@ -613,13 +727,15 @@ function FooterMarquee() {
 function SiteFooter({ onOpenView }) {
   return (
     <motion.footer
-      className="relative z-30 border-t px-6 py-8 md:px-10 md:py-10"
+      className="motion-surface relative z-30 border-t px-6 py-8 md:px-10 md:py-10"
       style={{ borderColor: "rgba(255,255,255,0.16)" }}
       initial={{ opacity: 0, y: -40 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      whileTap={{ scale: 0.997 }}
     >
+      <IdeaWave count={10} />
       <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-xs tracking-widest opacity-50" style={{ fontFamily: "var(--font-mono)" }}>
@@ -644,16 +760,36 @@ function SiteFooter({ onOpenView }) {
   );
 }
 
+function IdeaWave({ count = 18 }) {
+  return (
+    <div className="idea-wave" aria-hidden="true">
+      {Array.from({ length: count }, (_, index) => (
+        <span
+          key={index}
+          style={{
+            left: `${(index * 19 + 4) % 98}%`,
+            top: `${(index * 37 + 9) % 88}%`,
+            "--idea-delay": `${(index % 7) * -0.55}s`,
+          }}
+        >
+          ✦
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function ScrollSection({ id, number, label, children, tone = "transparent" }) {
   return (
     <motion.section
       id={id}
-      className="relative z-20 border-t px-6 py-20 md:px-10 md:py-32"
+      className="portfolio-section relative z-20 border-t px-6 py-20 md:px-10 md:py-32"
       style={{ borderColor: "rgba(255,255,255,0.16)", background: tone }}
       initial={{ opacity: 0, y: 56 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.12 }}
       transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      whileTap={{ scale: 0.998 }}
     >
       <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-[minmax(120px,1fr)_minmax(0,3fr)] md:gap-16">
         <div className="flex items-start justify-between gap-4 md:block">
@@ -672,7 +808,8 @@ function ScrollSection({ id, number, label, children, tone = "transparent" }) {
 
 function PortfolioBody({ onOpenView }) {
   return (
-    <div className="relative">
+    <div className="motion-surface relative">
+      <IdeaWave />
       <ScrollSection id="about" number="01" label="ABOUT ME">
         <AboutView />
       </ScrollSection>
@@ -947,7 +1084,7 @@ function ProjectsView() {
         {projects.map((project) => (
           <article
             key={project.id || project.number}
-            className="border-t py-6"
+            className="portfolio-item border-t py-6"
             style={{ borderColor: "rgba(255,255,255,0.16)" }}
           >
             {project.image_url && <img src={project.image_url} alt="" className="mb-5 aspect-[16/8] w-full object-cover" />}
@@ -1054,7 +1191,7 @@ function BlogView() {
         {BLOG_POSTS.map((post) => (
           <article
             key={post.number}
-            className="border-t py-6"
+            className="portfolio-item border-t py-6"
             style={{ borderColor: "rgba(255,255,255,0.16)" }}
           >
             <div className="flex items-start justify-between gap-4">
@@ -1101,7 +1238,7 @@ function InformationView({ eyebrow, title, description, items }) {
         {items.map((item, index) => (
           <div
             key={item.heading}
-            className="border-t py-6"
+            className="portfolio-item border-t py-6"
             style={{ borderColor: "rgba(255,255,255,0.16)" }}
           >
             <p className="text-xs tracking-widest opacity-50" style={{ fontFamily: "var(--font-mono)" }}>
@@ -1255,7 +1392,6 @@ export default function App() {
       style={{ background: COLORS.bg, color: COLORS.white }}
     >
       <GlobalStyles />
-      <ParticleBackground />
       <Header
         onOpenDrawer={() => {
           setDrawerView("menu");
@@ -1267,6 +1403,7 @@ export default function App() {
         }}
       />
       <main className="relative flex min-h-[78dvh] flex-col overflow-hidden">
+        <ParticleBackground />
         <HeroContent />
         <HeroImage />
         <FooterMarquee />
