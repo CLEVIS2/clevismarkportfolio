@@ -5,8 +5,8 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const hasValidConfig =
   typeof supabaseUrl === "string" &&
-  supabaseUrl.startsWith("https://") &&
-  !supabaseUrl.includes("your-project") &&
+  supabaseUrl.startsWith("https://ybvnjbbcuqsebjfleoxs.supabase.co/rest/v1/") &&
+  !supabaseUrl.includes("clevismarkportfolio.vercel.app") &&
   typeof supabaseAnonKey === "string" &&
   supabaseAnonKey.length > 20 &&
   !supabaseAnonKey.includes("your-publishable");
