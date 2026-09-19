@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.https://ybvnjbbcuqsebjfleoxs.supabase.co/rest/v1/;
-const supabaseAnonKey = import.meta.env.sb_publishable_oJWCHNYh1_LfufFOXD9rWQ_ri2QQoaZ;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const hasValidConfig =
   typeof supabaseUrl === "string" &&
